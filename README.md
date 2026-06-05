@@ -27,7 +27,7 @@ markdown
 ## 🚀 نصب سریع
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/xperee/khalifeh-tunnel/main/install.sh)
+bash <(curl -s https://raw.githubusercontent.com/xperess/Khalifeh_Tunnel_v3/main/install.sh)
 📖 راهنما
 مرحله 1: نصب روی هر دو سرور
 دستور نصب را روی هر دو سرور ایران و خارج اجرا کنید.
