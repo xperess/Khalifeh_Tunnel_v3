@@ -1,7 +1,5 @@
 #!/bin/bash
-# ============================================
 # نصب‌کننده تانل خلیفه
-# ============================================
 
 set -e
 
@@ -24,16 +22,21 @@ echo -e "${NC}"
 echo -e "${GREEN}نصب تانل خلیفه${NC}"
 echo ""
 
-# بررسی دسترسی روت
 if [[ $EUID -ne 0 ]]; then
     echo -e "${RED}این اسکریپت باید با دسترسی روت اجرا شود${NC}"
     echo "لطفاً اجرا کنید: sudo bash install.sh"
     exit 1
 fi
 
-# دانلود و نصب
 echo -e "${YELLOW}در حال دانلود اسکریپت اصلی...${NC}"
-curl -sSL -o /usr/local/bin/khalifeh https://raw.githubusercontent.com/xperee/khalifeh-tunnel/main/khalifeh.sh
+curl -sSL -o /usr/local/bin/khalifeh https://raw.githubusercontent.com/xperess/Khalifeh_Tunnel_v3/main/khalifeh.sh
+
+# تبدیل فرمت خطوط (در صورت نیاز)
+if command -v dos2unix &> /dev/null; then
+    dos2unix /usr/local/bin/khalifeh
+else
+    sed -i 's/\r$//' /usr/local/bin/khalifeh
+fi
 
 chmod +x /usr/local/bin/khalifeh
 
