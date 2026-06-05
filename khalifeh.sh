@@ -104,7 +104,7 @@ detect_server_location() {
 install_dependencies() {
     print_header "نصب وابستگی‌های مورد نیاز"
     
-    local deps=("unzip" "jq" "curl" "openssl")
+    local deps=("unzip" "jq" "curl" "openssl" "wget")
     local missing=()
     
     for dep in "${deps[@]}"; do
@@ -132,7 +132,7 @@ install_dependencies() {
     fi
 }
 
-# ==================== نصب Rathole ====================
+# ==================== نصب Rathole (نسخه اصلاح شده با دانلود مستقیم) ====================
 install_rathole() {
     print_header "نصب هسته Rathole"
     
@@ -147,27 +147,44 @@ install_rathole() {
         return 0
     fi
     
+    # تعیین لینک دانلود مستقیم بر اساس معماری
+    local download_url=""
     case "$arch" in
-        x86_64)  local rathole_arch="x86_64" ;;
-        aarch64) local rathole_arch="aarch64" ;;
-        armv7l)  local rathole_arch="armv7" ;;
-        *) print_error "معماری پشتیبانی نمی‌شود: $arch"; return 1 ;;
+        x86_64)
+            download_url="https://github.com/rapiz1/rathole/releases/download/v0.5.0/rathole-x86_64-unknown-linux-gnu.zip"
+            ;;
+        aarch64)
+            download_url="https://github.com/rapiz1/rathole/releases/download/v0.5.0/rathole-aarch64-unknown-linux-gnu.zip"
+            ;;
+        armv7l)
+            download_url="https://github.com/rapiz1/rathole/releases/download/v0.5.0/rathole-armv7-unknown-linux-gnueabihf.zip"
+            ;;
+        *)
+            print_error "معماری $arch پشتیبانی نمی‌شود"
+            return 1
+            ;;
     esac
     
-    print_info "دریافت آخرین نسخه Rathole..."
-    local latest_url=$(curl -s https://api.github.com/repos/rapiz1/rathole/releases/latest | grep -o "https://.*rathole-.*-${rathole_arch}-unknown-linux-gnu.zip" | head -1)
-    
-    if [[ -z "$latest_url" ]]; then
-        print_error "خطا در دریافت آدرس دانلود"
-        return 1
-    fi
-    
-    print_info "دانلود از: $latest_url"
+    print_info "در حال دانلود Rathole از آدرس مستقیم..."
+    print_info "$download_url"
     
     local tmp_dir=$(mktemp -d)
     cd "$tmp_dir"
     
-    curl -sSL -o rathole.zip "$latest_url"
+    # استفاده از wget یا curl برای دانلود
+    if command -v wget &> /dev/null; then
+        wget -q --show-progress "$download_url" -O rathole.zip
+    else
+        curl -# -L -o rathole.zip "$download_url"
+    fi
+    
+    if [[ ! -f "rathole.zip" ]] || [[ $(stat -c%s "rathole.zip") -lt 1000 ]]; then
+        print_error "دانلود ناموفق بود. فایل خالی یا ناقص است."
+        cd - > /dev/null
+        rm -rf "$tmp_dir"
+        return 1
+    fi
+    
     unzip -q rathole.zip
     cp rathole "$rathole_path"
     chmod +x "$rathole_path"
