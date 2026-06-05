@@ -5,7 +5,7 @@
 # مدیریت تونل Rathole برای اتصال ایران به خارج
 # مناسب برای استفاده با 3x-ui و Xray
 # ============================================
-# Repository: https://github.com/xperee/khalifeh-tunnel
+# Repository: https://github.com/xperess/Khalifeh_Tunnel_v3
 # Version: 1.0.0
 # License: MIT
 # ============================================
@@ -30,8 +30,8 @@ SCRIPT_PATH="/usr/local/bin/khalifeh"
 
 # ==================== تنظیمات ====================
 VERSION="1.0.0"
-GITHUB_REPO="xperee/khalifeh-tunnel"
-GITHUB_RAW="https://raw.githubusercontent.com/xperee/khalifeh-tunnel/main"
+GITHUB_REPO="xperess/Khalifeh_Tunnel_v3"
+GITHUB_RAW="https://raw.githubusercontent.com/xperess/Khalifeh_Tunnel_v3/main"
 
 # ==================== توابع کمکی ====================
 print_color() {
@@ -147,7 +147,6 @@ install_rathole() {
         return 0
     fi
     
-    # تعیین معماری
     case "$arch" in
         x86_64)  local rathole_arch="x86_64" ;;
         aarch64) local rathole_arch="aarch64" ;;
@@ -155,7 +154,6 @@ install_rathole() {
         *) print_error "معماری پشتیبانی نمی‌شود: $arch"; return 1 ;;
     esac
     
-    # دریافت آخرین نسخه از گیتهاب رسمی
     print_info "دریافت آخرین نسخه Rathole..."
     local latest_url=$(curl -s https://api.github.com/repos/rapiz1/rathole/releases/latest | grep -o "https://.*rathole-.*-${rathole_arch}-unknown-linux-gnu.zip" | head -1)
     
@@ -214,7 +212,6 @@ check_port() {
 configure_iran() {
     print_header "پیکربندی سرور ایران (سمت شنونده)"
     
-    # دریافت آدرس bind
     local bind_addr="0.0.0.0"
     echo -ne "آیا روی IPv6 گوش داده شود؟ (y/n) [n]: "
     read -r use_ipv6
@@ -225,7 +222,6 @@ configure_iran() {
         print_info "IPv4 فعال شد"
     fi
     
-    # پورت تونل
     local tunnel_port=""
     while true; do
         echo -ne "پورت تونل [10000-65535]: "
@@ -241,10 +237,8 @@ configure_iran() {
         fi
     done
     
-    # توکن
     local token=$(generate_token)
     
-    # تنظیمات TCP_NODELAY
     local nodelay="true"
     echo -ne "TCP_NODELAY فعال باشد؟ (y/n) [y]: "
     read -r enable_nodelay
@@ -252,7 +246,6 @@ configure_iran() {
         nodelay="false"
     fi
     
-    # Heartbeat
     local heartbeat=30
     echo -ne "Heartbeat فعال باشد؟ (y/n) [y]: "
     read -r enable_heartbeat
@@ -261,7 +254,6 @@ configure_iran() {
         print_info "Heartbeat غیرفعال شد"
     fi
     
-    # پورت‌های سرویس
     local service_ports=()
     print_info "پورت‌هایی که باید فوروارد شوند را وارد کنید (مثال: 443,80,8080)"
     echo -ne "پورت‌ها: "
@@ -283,7 +275,6 @@ configure_iran() {
         return 1
     fi
     
-    # انتخاب پروتکل حمل و نقل
     local transport="tcp"
     echo -ne "پروتکل انتقال (tcp/udp) [tcp]: "
     read -r transport_input
@@ -291,7 +282,6 @@ configure_iran() {
         transport="udp"
     fi
     
-    # ایجاد فایل کانفیگ
     local config_file="$CONFIG_DIR/iran-${tunnel_port}.toml"
     
     cat > "$config_file" << EOF
@@ -308,7 +298,6 @@ nodelay = ${nodelay}
 
 EOF
     
-    # افزودن پورت‌های سرویس
     for port in "${service_ports[@]}"; do
         cat >> "$config_file" << EOF
 
@@ -321,7 +310,6 @@ EOF
     
     print_success "کانفیگ ایجاد شد: $config_file"
     
-    # ایجاد سرویس systemd
     local service_name="khalifeh-iran-${tunnel_port}"
     local service_file="$SERVICE_DIR/${service_name}.service"
     
@@ -356,7 +344,6 @@ EOF
         return 1
     fi
     
-    # نمایش اطلاعات نهایی
     print_header "پیکربندی سرور ایران با موفقیت انجام شد"
     echo -e "${CYAN}پورت تونل:${NC} $tunnel_port"
     echo -e "${CYAN}توکن:${NC} $token"
@@ -369,7 +356,6 @@ EOF
 configure_kharej() {
     print_header "پیکربندی سرور خارج (سمت کلاینت)"
     
-    # دریافت اطلاعات سرور ایران
     local server_addr=""
     while true; do
         echo -ne "آدرس IP سرور ایران: "
@@ -414,7 +400,6 @@ configure_kharej() {
         heartbeat=0
     fi
     
-    # پورت‌های محلی
     local local_ports=()
     print_info "پورت‌های محلی که باید فوروارد شوند را وارد کنید"
     echo -ne "پورت‌ها: "
@@ -443,7 +428,6 @@ configure_kharej() {
         transport="udp"
     fi
     
-    # تشخیص IP محلی برای bind
     local bind_addr="127.0.0.1"
     echo -ne "به همه اینترفیس‌ها متصل شود؟ (y/n) [n]: "
     read -r bind_all
@@ -451,7 +435,6 @@ configure_kharej() {
         bind_addr="0.0.0.0"
     fi
     
-    # ایجاد فایل کانفیگ
     local config_file="$CONFIG_DIR/kharej-${tunnel_port}.toml"
     
     cat > "$config_file" << EOF
@@ -481,7 +464,6 @@ EOF
     
     print_success "کانفیگ ایجاد شد: $config_file"
     
-    # ایجاد سرویس systemd
     local service_name="khalifeh-kharej-${tunnel_port}"
     local service_file="$SERVICE_DIR/${service_name}.service"
     
@@ -527,7 +509,6 @@ manage_services() {
     local services=()
     local index=1
     
-    # جمع‌آوری سرویس‌ها
     for service in $(systemctl list-units --type=service --all | grep -o "khalifeh-[^[:space:]]*" | sort -u); do
         services+=("$service")
         local status=$(systemctl is-active "$service" 2>/dev/null)
@@ -627,12 +608,10 @@ delete_tunnel() {
         return
     fi
     
-    # توقف و حذف سرویس
     systemctl stop "$service_name" > /dev/null 2>&1
     systemctl disable "$service_name" > /dev/null 2>&1
     rm -f "$SERVICE_DIR/${service_name}.service"
     
-    # حذف فایل کانفیگ
     local tunnel_port=$(echo "$service_name" | grep -o '[0-9]*$')
     rm -f "$CONFIG_DIR/iran-${tunnel_port}.toml" 2>/dev/null
     rm -f "$CONFIG_DIR/kharej-${tunnel_port}.toml" 2>/dev/null
@@ -717,14 +696,11 @@ test_tunnel() {
 optimize_network() {
     print_header "بهینه‌سازی شبکه و سیستم"
     
-    # پشتیبان‌گیری
     cp /etc/sysctl.conf /etc/sysctl.conf.bak 2>/dev/null
     print_success "پشتیبان تهیه شد: /etc/sysctl.conf.bak"
     
-    # حذف تنظیمات قبلی مربوط به بهینه‌سازی
     sed -i '/# Khalifeh Tunnel Optimizations/,/# End Khalifeh/d' /etc/sysctl.conf 2>/dev/null
     
-    # اعمال تنظیمات بهینه
     cat >> /etc/sysctl.conf << 'EOF'
 
 # Khalifeh Tunnel Optimizations
@@ -747,7 +723,6 @@ EOF
     
     sysctl -p > /dev/null 2>&1
     
-    # تنظیمات محدودیت‌های سیستم
     if ! grep -q "# Khalifeh Limits" /etc/security/limits.conf; then
         cat >> /etc/security/limits.conf << 'EOF'
 
@@ -799,7 +774,6 @@ remove_core() {
         return
     fi
     
-    # حذف همه سرویس‌ها
     for service in $(systemctl list-units --type=service --all | grep -o "khalifeh-[^[:space:]]*" | sort -u); do
         systemctl stop "$service" > /dev/null 2>&1
         systemctl disable "$service" > /dev/null 2>&1
@@ -808,7 +782,6 @@ remove_core() {
     
     systemctl daemon-reload
     
-    # حذف فایل‌ها
     rm -rf "$CONFIG_DIR"
     rm -rf "$LOG_DIR"
     
@@ -831,7 +804,7 @@ EOF
     echo -e "${NC}"
     echo -e "${GREEN}    تانل خلیفه - Khalifeh Tunnel Manager v${VERSION}${NC}"
     echo -e "${YELLOW}    راهکاری امن و سریع برای تونل‌زنی${NC}"
-    echo -e "${CYAN}    github.com/xperee/khalifeh-tunnel${NC}"
+    echo -e "${CYAN}    github.com/xperess/Khalifeh_Tunnel_v3${NC}"
     echo
 }
 
@@ -878,7 +851,8 @@ main_menu() {
         
         read -p "انتخاب [0-9]: " choice
         
-        case $choice in            1) configure_iran ;;
+        case $choice in
+            1) configure_iran ;;
             2) configure_kharej ;;
             3) manage_services ;;
             4) check_status ;;

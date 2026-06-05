@@ -1,5 +1,5 @@
 #!/bin/bash
-# نصب‌کننده تانل خلیفه
+# نصب کننده تانل خلیفه
 
 set -e
 
@@ -30,13 +30,6 @@ fi
 
 echo -e "${YELLOW}در حال دانلود اسکریپت اصلی...${NC}"
 curl -sSL -o /usr/local/bin/khalifeh https://raw.githubusercontent.com/xperess/Khalifeh_Tunnel_v3/main/khalifeh.sh
-
-# تبدیل فرمت خطوط (در صورت نیاز)
-if command -v dos2unix &> /dev/null; then
-    dos2unix /usr/local/bin/khalifeh
-else
-    sed -i 's/\r$//' /usr/local/bin/khalifeh
-fi
 
 chmod +x /usr/local/bin/khalifeh
 
