@@ -5,18 +5,10 @@ CONFIG="$BASE/configs"
 BIN="$BASE/bin"
 SERVICE="/etc/systemd/system"
 
-# ================================
-# INSTALL FRP (اصلاح شده با لینک مستقیم)
-# ================================
 install_frp() {
-
 echo "[*] Installing FRP..."
-
 mkdir -p "$BIN"
-
 ARCH=$(uname -m)
-
-# استفاده از لینک مستقیم نسخه 0.61.2
 if [[ "$ARCH" == "x86_64" ]]; then
     URL="https://github.com/fatedier/frp/releases/download/v0.61.2/frp_0.61.2_linux_amd64.tar.gz"
 elif [[ "$ARCH" == "aarch64" ]]; then
@@ -25,50 +17,32 @@ else
     echo "Unsupported architecture"
     exit 1
 fi
-
 echo "[*] Downloading from: $URL"
-
 curl -L --connect-timeout 30 --retry 3 "$URL" -o /tmp/frp.tar.gz
 if [[ $? -ne 0 ]]; then
-    echo "[!] Download failed, trying with wget..."
     wget -q --timeout=30 "$URL" -O /tmp/frp.tar.gz
 fi
-
 tar -xzf /tmp/frp.tar.gz -C /tmp/
-
 cp /tmp/frp*/frps "$BIN/"
 cp /tmp/frp*/frpc "$BIN/"
-
 chmod +x "$BIN/frps" "$BIN/frpc"
 rm -rf /tmp/frp* /tmp/frp.tar.gz
-
 echo "[+] FRP installed"
 }
 
-# ================================
-# GENERATE TOKEN
-# ================================
 gen_token() {
 openssl rand -hex 32
 }
 
-# ================================
-# SERVER CONFIG (IRAN)
-# ================================
 frp_server() {
-
 echo "Dashboard port [7500]: "
 read DASH
 DASH=${DASH:-7500}
-
 echo "Bind port (tunnel) [7000]: "
 read BIND
 BIND=${BIND:-7000}
-
 TOKEN=$(gen_token)
-
 CONFIG_FILE="$CONFIG/frps.toml"
-
 cat > "$CONFIG_FILE" <<EOF
 [common]
 bindPort = $BIND
@@ -79,31 +53,21 @@ dashboard_port = $DASH
 dashboard_user = "admin"
 dashboard_pwd = "$(openssl rand -hex 4)"
 EOF
-
 echo "[+] FRP Server config created"
 echo "[!] TOKEN: $TOKEN"
 echo "[!] Dashboard: http://SERVER_IP:$DASH"
 }
 
-# ================================
-# CLIENT CONFIG (KHAREJ)
-# ================================
 frp_client() {
-
 echo "Iran IP: "
 read IP
-
 echo "Tunnel port: "
 read PORT
-
 echo "Token: "
 read TOKEN
-
 echo "Local ports (comma separated): "
 read PORTS
-
 CONFIG_FILE="$CONFIG/frpc.toml"
-
 cat > "$CONFIG_FILE" <<EOF
 [common]
 server_addr = "$IP"
@@ -111,12 +75,9 @@ server_port = $PORT
 auth.method = "token"
 auth.token = "$TOKEN"
 EOF
-
 IFS=',' read -ra ADDR <<< "$PORTS"
-
 for p in "${ADDR[@]}"; do
 p=$(echo $p | xargs)
-
 cat >> "$CONFIG_FILE" <<EOF
 
 [[proxies]]
@@ -126,17 +87,11 @@ localIP = "127.0.0.1"
 localPort = $p
 remotePort = $p
 EOF
-
 done
-
 echo "[+] FRP Client created"
 }
 
-# ================================
-# SYSTEMD SERVER
-# ================================
 start_server() {
-
 cat > "$SERVICE/frps.service" <<EOF
 [Unit]
 Description=FRP Server
@@ -151,19 +106,13 @@ LimitNOFILE=1048576
 [Install]
 WantedBy=multi-user.target
 EOF
-
 systemctl daemon-reload
 systemctl enable frps
 systemctl start frps
-
 echo "[+] FRP Server started"
 }
 
-# ================================
-# SYSTEMD CLIENT
-# ================================
 start_client() {
-
 cat > "$SERVICE/frpc.service" <<EOF
 [Unit]
 Description=FRP Client
@@ -178,28 +127,19 @@ LimitNOFILE=1048576
 [Install]
 WantedBy=multi-user.target
 EOF
-
 systemctl daemon-reload
 systemctl enable frpc
 systemctl start frpc
-
 echo "[+] FRP Client started"
 }
 
-# ================================
-# STATUS
-# ================================
 status() {
 echo "=== FRP SERVER ==="
 systemctl status frps --no-pager || true
-
 echo "=== FRP CLIENT ==="
 systemctl status frpc --no-pager || true
 }
 
-# ================================
-# DASHBOARD INFO
-# ================================
 info() {
 echo "FRP Dashboard usually runs on:"
 echo "http://SERVER_IP:7500"
@@ -207,14 +147,9 @@ echo "Default user: admin"
 echo "Password is randomly generated"
 }
 
-# ================================
-# MENU
-# ================================
 frp_menu() {
-
 while true
 do
-
 echo ""
 echo "===== FRP MODULE ====="
 echo "1) Install FRP"
@@ -225,9 +160,7 @@ echo "5) Start Client"
 echo "6) Status"
 echo "7) Dashboard Info"
 echo "0) Back"
-
 read -p "Select: " c
-
 case $c in
 1) install_frp ;;
 2) frp_server ;;
@@ -238,6 +171,5 @@ case $c in
 7) info ;;
 0) break ;;
 esac
-
 done
 }

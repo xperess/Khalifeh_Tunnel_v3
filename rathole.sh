@@ -5,18 +5,10 @@ CONFIG_DIR="$RATHOLE_DIR/configs"
 BIN_DIR="$RATHOLE_DIR/bin"
 SERVICE_DIR="/etc/systemd/system"
 
-# ================================
-# INSTALL RATHOLE (اصلاح شده با لینک مستقیم)
-# ================================
 install_rathole() {
-
 echo "[*] Installing Rathole..."
-
 mkdir -p "$BIN_DIR"
-
 ARCH=$(uname -m)
-
-# استفاده از لینک مستقیم نسخه v0.5.0 به جای API گیت‌هاب
 if [[ "$ARCH" == "x86_64" ]]; then
     URL="https://github.com/rapiz1/rathole/releases/download/v0.5.0/rathole-x86_64-unknown-linux-gnu.zip"
 elif [[ "$ARCH" == "aarch64" ]]; then
@@ -25,48 +17,31 @@ else
     echo "Unsupported arch: $ARCH"
     exit 1
 fi
-
 echo "[*] Downloading from: $URL"
-
 curl -L --connect-timeout 30 --retry 3 "$URL" -o /tmp/rathole.zip
 if [[ $? -ne 0 ]]; then
-    echo "[!] Download failed, trying with wget..."
     wget -q --timeout=30 "$URL" -O /tmp/rathole.zip
 fi
-
 unzip -o /tmp/rathole.zip -d /tmp/
 cp /tmp/rathole "$BIN_DIR/rathole"
 chmod +x "$BIN_DIR/rathole"
-
 rm -f /tmp/rathole.zip
-
 echo "[+] Rathole installed successfully"
 }
 
-# ================================
-# GENERATE TOKEN
-# ================================
 generate_token() {
 openssl rand -hex 32
 }
 
-# ================================
-# CREATE IRAN SERVER
-# ================================
 create_iran_server() {
-
 echo "Enter tunnel port (default 2333): "
 read TPORT
 TPORT=${TPORT:-2333}
-
 echo "Enter service ports (comma separated): "
 read PORTS
-
 TOKEN=$(generate_token)
-
 CONFIG="$CONFIG_DIR/rathole-server.toml"
 mkdir -p "$CONFIG_DIR"
-
 cat > "$CONFIG" <<EOF
 [server]
 bind_addr = "0.0.0.0:$TPORT"
@@ -75,9 +50,7 @@ default_token = "$TOKEN"
 [server.transport]
 type = "tcp"
 EOF
-
 IFS=',' read -ra ADDR <<< "$PORTS"
-
 for p in "${ADDR[@]}"; do
 p=$(echo $p | xargs)
 cat >> "$CONFIG" <<EOF
@@ -86,30 +59,20 @@ cat >> "$CONFIG" <<EOF
 bind_addr = "0.0.0.0:$p"
 EOF
 done
-
 echo "[+] Server config created: $CONFIG"
 echo "[!] SAVE TOKEN: $TOKEN"
 }
 
-# ================================
-# CREATE KHAREJ CLIENT
-# ================================
 create_kharej_client() {
-
 echo "Enter Iran IP: "
 read IP
-
 echo "Enter tunnel port: "
 read TPORT
-
 echo "Enter service ports (comma separated): "
 read PORTS
-
 echo "Enter TOKEN: "
 read TOKEN
-
 CONFIG="$CONFIG_DIR/rathole-client.toml"
-
 cat > "$CONFIG" <<EOF
 [client]
 remote_addr = "$IP:$TPORT"
@@ -118,9 +81,7 @@ default_token = "$TOKEN"
 [client.transport]
 type = "tcp"
 EOF
-
 IFS=',' read -ra ADDR <<< "$PORTS"
-
 for p in "${ADDR[@]}"; do
 p=$(echo $p | xargs)
 cat >> "$CONFIG" <<EOF
@@ -129,17 +90,11 @@ cat >> "$CONFIG" <<EOF
 local_addr = "127.0.0.1:$p"
 EOF
 done
-
 echo "[+] Client config created: $CONFIG"
 }
 
-# ================================
-# SYSTEMD SERVER
-# ================================
 start_server_service() {
-
 SERVICE="/etc/systemd/system/khalifeh-rathole-server.service"
-
 cat > "$SERVICE" <<EOF
 [Unit]
 Description=Khalifeh Rathole Server
@@ -154,21 +109,14 @@ LimitNOFILE=1048576
 [Install]
 WantedBy=multi-user.target
 EOF
-
 systemctl daemon-reload
 systemctl enable khalifeh-rathole-server
 systemctl start khalifeh-rathole-server
-
 echo "[+] Server started"
 }
 
-# ================================
-# SYSTEMD CLIENT
-# ================================
 start_client_service() {
-
 SERVICE="/etc/systemd/system/khalifeh-rathole-client.service"
-
 cat > "$SERVICE" <<EOF
 [Unit]
 Description=Khalifeh Rathole Client
@@ -183,27 +131,18 @@ LimitNOFILE=1048576
 [Install]
 WantedBy=multi-user.target
 EOF
-
 systemctl daemon-reload
 systemctl enable khalifeh-rathole-client
 systemctl start khalifeh-rathole-client
-
 echo "[+] Client started"
 }
 
-# ================================
-# STATUS
-# ================================
 status() {
 systemctl status khalifeh-rathole-server --no-pager
 systemctl status khalifeh-rathole-client --no-pager
 }
 
-# ================================
-# MENU
-# ================================
 rathole_menu() {
-
 while true
 do
 echo ""
@@ -216,7 +155,6 @@ echo "5) Start Client"
 echo "6) Status"
 echo "0) Back"
 read -p "Select: " c
-
 case $c in
 1) install_rathole ;;
 2) create_iran_server ;;
@@ -226,6 +164,5 @@ case $c in
 6) status ;;
 0) break ;;
 esac
-
 done
 }
