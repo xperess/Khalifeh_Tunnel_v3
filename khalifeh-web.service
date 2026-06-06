@@ -1,0 +1,12 @@
+cat > /etc/systemd/system/khalifeh-web.service <<EOF
+[Unit]
+Description=Khalifeh Web Panel
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/khalifeh/web/app.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF

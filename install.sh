@@ -1,43 +1,72 @@
 #!/bin/bash
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+set -e
 
-echo -e "${CYAN}"
-cat << "EOF"
-    ██╗  ██╗██╗  ██╗ █████╗ ██╗     ██╗███████╗███████╗██╗  ██╗
-    ██║ ██╔╝██║  ██║██╔══██╗██║     ██║██╔════╝██╔════╝██║  ██║
-    █████╔╝ ███████║███████║██║     ██║█████╗  █████╗  ███████║
-    ██╔═██╗ ██╔══██║██╔══██║██║     ██║██╔══╝  ██╔══╝  ██╔══██║
-    ██║  ██╗██║  ██║██║  ██║███████╗██║██║     ███████╗██║  ██║
-    ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝╚═╝     ╚══════╝╚═╝  ╚═╝
+BASE="/opt/khalifeh"
+
+echo "=================================="
+echo "  Installing Khalifeh Tunnel v2"
+echo "=================================="
+
+# ================================
+# CREATE STRUCTURE
+# ================================
+mkdir -p $BASE/modules
+mkdir -p $BASE/configs
+mkdir -p $BASE/bin
+mkdir -p $BASE/backup
+
+# ================================
+# PACKAGES
+# ================================
+apt update -y
+apt install -y curl wget jq unzip openssl tar
+
+# ================================
+# DOWNLOAD MODULES PLACEHOLDER
+# ================================
+echo "[*] Preparing system structure..."
+
+# core launcher
+cat > /usr/local/bin/khalifeh <<EOF
+#!/bin/bash
+source /opt/khalifeh/core.sh
+main_menu
 EOF
-echo -e "${NC}"
-echo -e "${GREEN}نصب تانل خلیفه${NC}"
+
+chmod +x /usr/local/bin/khalifeh
+
+# ================================
+# PLACE CORE FILE
+# ================================
+cat > $BASE/core.sh <<'EOF'
+# core will be injected later
+EOF
+
+# ================================
+# CREATE SERVICE WRAPPER (optional auto start)
+# ================================
+cat > /etc/systemd/system/khalifeh.service <<EOF
+[Unit]
+Description=Khalifeh Tunnel Core
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/khalifeh
+Restart=always
+TTYPath=/dev/tty
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+
 echo ""
-
-if [[ $EUID -ne 0 ]]; then
-    echo -e "${RED}این اسکریپت باید با دسترسی روت اجرا شود${NC}"
-    exit 1
-fi
-
-echo -e "${YELLOW}در حال دانلود اسکریپت اصلی...${NC}"
-
-# تلاش با چندین منبع مختلف
-if curl -sSL -o /usr/local/bin/khalifeh https://raw.githubusercontent.com/xperess/Khalifeh_Tunnel_v3/main/khalifeh.sh 2>/dev/null; then
-    chmod +x /usr/local/bin/khalifeh
-elif curl -sSL -o /usr/local/bin/khalifeh https://gh-proxy.com/raw.githubusercontent.com/xperess/Khalifeh_Tunnel_v3/main/khalifeh.sh 2>/dev/null; then
-    chmod +x /usr/local/bin/khalifeh
-elif curl -sSL -o /usr/local/bin/khalifeh https://ghproxy.net/raw.githubusercontent.com/xperess/Khalifeh_Tunnel_v3/main/khalifeh.sh 2>/dev/null; then
-    chmod +x /usr/local/bin/khalifeh
-else
-    echo -e "${RED}خطا در دانلود. لطفاً دستی نصب کنید${NC}"
-    exit 1
-fi
-
-echo -e "${GREEN}✅ تانل خلیفه با موفقیت نصب شد${NC}"
+echo "[+] Base system installed"
 echo ""
-echo -e "${CYAN}برای اجرا:${NC} ${YELLOW}khalifeh${NC}"
+echo "Next step:"
+echo "1) Run: khalifeh"
+echo "2) Install Rathole or FRP from menu"
+echo ""

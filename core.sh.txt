@@ -1,0 +1,66 @@
+#!/bin/bash
+
+BASE_DIR="/opt/khalifeh"
+
+load_modules() {
+
+    source ${BASE_DIR}/modules/rathole.sh
+    source ${BASE_DIR}/modules/frp.sh
+    source ${BASE_DIR}/modules/network.sh
+
+}
+
+show_logo() {
+
+echo "==================================="
+echo " Khalifeh Tunnel v2"
+echo "==================================="
+
+}
+
+main_menu() {
+
+load_modules
+
+while true
+do
+
+clear
+
+show_logo
+
+echo "1) Rathole"
+echo "2) FRP"
+echo "3) Network Optimization"
+echo "4) Tunnel Status"
+echo "0) Exit"
+
+read -p "Select: " choice
+
+case $choice in
+
+1)
+rathole_menu
+;;
+
+2)
+frp_menu
+;;
+
+3)
+optimize_network
+;;
+
+4)
+show_tunnels_status
+;;
+
+0)
+exit 0
+;;
+
+esac
+
+done
+
+}
