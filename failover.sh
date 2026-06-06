@@ -44,11 +44,12 @@ systemctl stop hysteria2-client >/dev/null 2>&1
 }
 
 # ================================
-# MAIN LOOP
+# MAIN LOOP (اصلاح شده با اینتروال 5 ثانیه)
 # ================================
 failover_loop() {
 
 echo "[*] Starting Auto Failover Engine..."
+echo "[*] Check interval: 5 seconds"
 
 while true
 do
@@ -61,12 +62,12 @@ check_service khalifeh-rathole-client
 R2=$?
 
 if [[ $R1 -eq 0 || $R2 -eq 0 ]]; then
-    echo "[✓] Rathole OK (PRIMARY)"
-    sleep 10
+    echo "[$(date '+%H:%M:%S')] ✓ Rathole OK (PRIMARY)"
+    sleep 5
     continue
 fi
 
-echo "[!] Rathole DOWN → switching to FRP"
+echo "[$(date '+%H:%M:%S')] ⚠ Rathole DOWN → switching to FRP"
 
 # ================= FRP =================
 check_service frps
@@ -76,12 +77,12 @@ check_service frpc
 F2=$?
 
 if [[ $F1 -eq 0 || $F2 -eq 0 ]]; then
-    echo "[✓] FRP OK (FALLBACK)"
-    sleep 10
+    echo "[$(date '+%H:%M:%S')] ✓ FRP OK (FALLBACK)"
+    sleep 5
     continue
 fi
 
-echo "[!] FRP DOWN → switching to Hysteria2"
+echo "[$(date '+%H:%M:%S')] ⚠ FRP DOWN → switching to Hysteria2"
 
 # ================= HYSTERIA =================
 check_service hysteria2
@@ -91,22 +92,26 @@ check_service hysteria2-client
 H2=$?
 
 if [[ $H1 -eq 0 || $H2 -eq 0 ]]; then
-    echo "[✓] Hysteria2 OK (LAST RESORT)"
-    sleep 10
+    echo "[$(date '+%H:%M:%S')] ✓ Hysteria2 OK (LAST RESORT)"
+    sleep 5
     continue
 fi
 
-echo "[!!!] ALL DOWN → restarting stack"
+echo "[$(date '+%H:%M:%S')] ❌ ALL DOWN → restarting all services"
 
 stop_all
 sleep 2
 
 start_rathole
+sleep 1
 start_frp
+sleep 1
 start_hysteria
 
 sleep 10
 
 done
-
 }
+
+# اجرای لوپ
+failover_loop

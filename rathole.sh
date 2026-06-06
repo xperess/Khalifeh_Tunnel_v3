@@ -6,7 +6,7 @@ BIN_DIR="$RATHOLE_DIR/bin"
 SERVICE_DIR="/etc/systemd/system"
 
 # ================================
-# INSTALL RATHOLE
+# INSTALL RATHOLE (اصلاح شده با لینک مستقیم)
 # ================================
 install_rathole() {
 
@@ -16,22 +16,31 @@ mkdir -p "$BIN_DIR"
 
 ARCH=$(uname -m)
 
+# استفاده از لینک مستقیم نسخه v0.5.0 به جای API گیت‌هاب
 if [[ "$ARCH" == "x86_64" ]]; then
-    URL=$(curl -s https://api.github.com/repos/rapiz1/rathole/releases/latest | grep browser_download_url | grep x86_64 | cut -d '"' -f 4)
+    URL="https://github.com/rapiz1/rathole/releases/download/v0.5.0/rathole-x86_64-unknown-linux-gnu.zip"
 elif [[ "$ARCH" == "aarch64" ]]; then
-    URL=$(curl -s https://api.github.com/repos/rapiz1/rathole/releases/latest | grep browser_download_url | grep aarch64 | cut -d '"' -f 4)
+    URL="https://github.com/rapiz1/rathole/releases/download/v0.5.0/rathole-aarch64-unknown-linux-gnu.zip"
 else
-    echo "Unsupported arch"
+    echo "Unsupported arch: $ARCH"
     exit 1
 fi
 
-curl -L "$URL" -o /tmp/rathole.zip
-unzip -o /tmp/rathole.zip -d /tmp/
+echo "[*] Downloading from: $URL"
 
+curl -L --connect-timeout 30 --retry 3 "$URL" -o /tmp/rathole.zip
+if [[ $? -ne 0 ]]; then
+    echo "[!] Download failed, trying with wget..."
+    wget -q --timeout=30 "$URL" -O /tmp/rathole.zip
+fi
+
+unzip -o /tmp/rathole.zip -d /tmp/
 cp /tmp/rathole "$BIN_DIR/rathole"
 chmod +x "$BIN_DIR/rathole"
 
-echo "[+] Rathole installed"
+rm -f /tmp/rathole.zip
+
+echo "[+] Rathole installed successfully"
 }
 
 # ================================
@@ -139,6 +148,7 @@ After=network.target
 [Service]
 ExecStart=$BIN_DIR/rathole $CONFIG_DIR/rathole-server.toml
 Restart=always
+RestartSec=3
 LimitNOFILE=1048576
 
 [Install]
@@ -167,6 +177,7 @@ After=network.target
 [Service]
 ExecStart=$BIN_DIR/rathole $CONFIG_DIR/rathole-client.toml
 Restart=always
+RestartSec=3
 LimitNOFILE=1048576
 
 [Install]

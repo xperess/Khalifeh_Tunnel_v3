@@ -6,7 +6,19 @@ BIN="$BASE/bin"
 SERVICE="/etc/systemd/system"
 
 # ================================
-# INSTALL HYSTERIA2
+# GENERATE SSL CERTIFICATE (اضافه شده)
+# ================================
+generate_ssl() {
+    echo "[*] Generating self-signed SSL certificate..."
+    mkdir -p /etc/ssl/khalifeh
+    openssl req -x509 -nodes -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
+      -keyout /etc/ssl/khalifeh/key.pem -out /etc/ssl/khalifeh/cert.pem \
+      -days 3650 -subj "/CN=localhost" 2>/dev/null
+    echo "[+] SSL certificate created"
+}
+
+# ================================
+# INSTALL HYSTERIA2 (اصلاح شده)
 # ================================
 install_hysteria2() {
 
@@ -16,22 +28,28 @@ mkdir -p "$BIN"
 
 ARCH=$(uname -m)
 
-LATEST=$(curl -s https://api.github.com/repos/apernet/hysteria/releases/latest)
-
+# استفاده از لینک مستقیم نسخه v2.6.1
 if [[ "$ARCH" == "x86_64" ]]; then
-    URL=$(echo "$LATEST" | grep browser_download_url | grep linux-amd64 | cut -d '"' -f 4)
+    URL="https://github.com/apernet/hysteria/releases/download/v2.6.1/hysteria-linux-amd64"
 elif [[ "$ARCH" == "aarch64" ]]; then
-    URL=$(echo "$LATEST" | grep browser_download_url | grep linux-arm64 | cut -d '"' -f 4)
+    URL="https://github.com/apernet/hysteria/releases/download/v2.6.1/hysteria-linux-arm64"
 else
     echo "Unsupported architecture"
     exit 1
 fi
 
-curl -L "$URL" -o /tmp/hysteria.tar.gz
-tar -xzf /tmp/hysteria.tar.gz -C /tmp/
+echo "[*] Downloading from: $URL"
 
-cp /tmp/hysteria*/hysteria $BIN/hysteria2
-chmod +x $BIN/hysteria2
+curl -L --connect-timeout 30 --retry 3 "$URL" -o "$BIN/hysteria2"
+if [[ $? -ne 0 ]]; then
+    echo "[!] Download failed, trying with wget..."
+    wget -q --timeout=30 "$URL" -O "$BIN/hysteria2"
+fi
+
+chmod +x "$BIN/hysteria2"
+
+# تولید سرت SSL
+generate_ssl
 
 echo "[+] Hysteria2 installed"
 }
@@ -64,8 +82,8 @@ auth:
   password: $PASS
 
 tls:
-  cert: /etc/ssl/cert.pem
-  key: /etc/ssl/key.pem
+  cert: /etc/ssl/khalifeh/cert.pem
+  key: /etc/ssl/khalifeh/key.pem
 
 bandwidth:
   up: 100 mbps
@@ -121,6 +139,7 @@ After=network.target
 [Service]
 ExecStart=$BIN/hysteria2 server -c $CFG/hysteria-server.yaml
 Restart=always
+RestartSec=3
 LimitNOFILE=1048576
 
 [Install]
@@ -147,6 +166,7 @@ After=network.target
 [Service]
 ExecStart=$BIN/hysteria2 client -c $CFG/hysteria-client.yaml
 Restart=always
+RestartSec=3
 LimitNOFILE=1048576
 
 [Install]

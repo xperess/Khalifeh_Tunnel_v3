@@ -6,7 +6,7 @@ BIN="$BASE/bin"
 SERVICE="/etc/systemd/system"
 
 # ================================
-# INSTALL FRP
+# INSTALL FRP (اصلاح شده با لینک مستقیم)
 # ================================
 install_frp() {
 
@@ -16,24 +16,31 @@ mkdir -p "$BIN"
 
 ARCH=$(uname -m)
 
-LATEST=$(curl -s https://api.github.com/repos/fatedier/frp/releases/latest)
-
+# استفاده از لینک مستقیم نسخه 0.61.2
 if [[ "$ARCH" == "x86_64" ]]; then
-    URL=$(echo "$LATEST" | grep browser_download_url | grep linux_amd64 | cut -d '"' -f 4)
+    URL="https://github.com/fatedier/frp/releases/download/v0.61.2/frp_0.61.2_linux_amd64.tar.gz"
 elif [[ "$ARCH" == "aarch64" ]]; then
-    URL=$(echo "$LATEST" | grep browser_download_url | grep linux_arm64 | cut -d '"' -f 4)
+    URL="https://github.com/fatedier/frp/releases/download/v0.61.2/frp_0.61.2_linux_arm64.tar.gz"
 else
     echo "Unsupported architecture"
     exit 1
 fi
 
-curl -L "$URL" -o /tmp/frp.tar.gz
+echo "[*] Downloading from: $URL"
+
+curl -L --connect-timeout 30 --retry 3 "$URL" -o /tmp/frp.tar.gz
+if [[ $? -ne 0 ]]; then
+    echo "[!] Download failed, trying with wget..."
+    wget -q --timeout=30 "$URL" -O /tmp/frp.tar.gz
+fi
+
 tar -xzf /tmp/frp.tar.gz -C /tmp/
 
 cp /tmp/frp*/frps "$BIN/"
 cp /tmp/frp*/frpc "$BIN/"
 
 chmod +x "$BIN/frps" "$BIN/frpc"
+rm -rf /tmp/frp* /tmp/frp.tar.gz
 
 echo "[+] FRP installed"
 }
@@ -60,9 +67,9 @@ BIND=${BIND:-7000}
 
 TOKEN=$(gen_token)
 
-CONFIG="$CONFIG/frps.toml"
+CONFIG_FILE="$CONFIG/frps.toml"
 
-cat > "$CONFIG" <<EOF
+cat > "$CONFIG_FILE" <<EOF
 [common]
 bindPort = $BIND
 auth.method = "token"
@@ -95,9 +102,9 @@ read TOKEN
 echo "Local ports (comma separated): "
 read PORTS
 
-CONFIG="$CONFIG/frpc.toml"
+CONFIG_FILE="$CONFIG/frpc.toml"
 
-cat > "$CONFIG" <<EOF
+cat > "$CONFIG_FILE" <<EOF
 [common]
 server_addr = "$IP"
 server_port = $PORT
@@ -110,7 +117,7 @@ IFS=',' read -ra ADDR <<< "$PORTS"
 for p in "${ADDR[@]}"; do
 p=$(echo $p | xargs)
 
-cat >> "$CONFIG" <<EOF
+cat >> "$CONFIG_FILE" <<EOF
 
 [[proxies]]
 name = "p$p"
@@ -138,6 +145,7 @@ After=network.target
 [Service]
 ExecStart=$BIN/frps -c $CONFIG/frps.toml
 Restart=always
+RestartSec=3
 LimitNOFILE=1048576
 
 [Install]
@@ -164,6 +172,7 @@ After=network.target
 [Service]
 ExecStart=$BIN/frpc -c $CONFIG/frpc.toml
 Restart=always
+RestartSec=3
 LimitNOFILE=1048576
 
 [Install]
