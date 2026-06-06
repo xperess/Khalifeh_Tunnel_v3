@@ -8,27 +8,17 @@ echo "=================================="
 echo "  Installing Khalifeh Tunnel v2"
 echo "=================================="
 
-# ================================
-# CREATE STRUCTURE
-# ================================
 mkdir -p $BASE/modules
 mkdir -p $BASE/configs
 mkdir -p $BASE/bin
 mkdir -p $BASE/backup
 mkdir -p $BASE/web/templates
 
-# ================================
-# PACKAGES
-# ================================
 apt update -y
 apt install -y curl wget jq unzip openssl tar
 apt install -y python3-flask || apt install -y flask
 
-# ================================
-# CREATE CORE FILES
-# ================================
-
-cat > $BASE/core.sh << 'EOF'
+cat > $BASE/core.sh << 'CORE_EOF'
 #!/bin/bash
 
 BASE="/opt/khalifeh"
@@ -67,7 +57,7 @@ read -p "Press Enter..."
 
 optimize_network() {
 echo "[*] Applying network optimizations..."
-cat >> /etc/sysctl.conf <<EOF
+cat >> /etc/sysctl.conf << SYSCTL_EOF
 
 # KHALIFEH OPTIMIZATION
 net.core.default_qdisc = fq
@@ -77,7 +67,7 @@ net.core.wmem_max = 33554432
 net.ipv4.tcp_fastopen = 3
 net.ipv4.tcp_fin_timeout = 30
 net.ipv4.tcp_tw_reuse = 1
-EOF
+SYSCTL_EOF
 sysctl -p >/dev/null 2>&1
 echo "[+] Network optimized"
 read -p "Press Enter..."
@@ -141,13 +131,9 @@ case $c in
 esac
 done
 }
-EOF
+CORE_EOF
 
-# ================================
-# DOWNLOAD MODULES
-# ================================
 echo "[*] Downloading modules..."
-
 GITHUB_BASE="https://raw.githubusercontent.com/xperess/Khalifeh_Tunnel_v3/main"
 
 curl -sSL "$GITHUB_BASE/rathole.sh" -o $BASE/modules/rathole.sh
@@ -160,21 +146,15 @@ curl -sSL "$GITHUB_BASE/index.html" -o $BASE/web/templates/index.html
 chmod +x $BASE/modules/*.sh
 chmod +x $BASE/failover.sh
 
-# ================================
-# CREATE LAUNCHER
-# ================================
-cat > /usr/local/bin/khalifeh <<EOF
+cat > /usr/local/bin/khalifeh << 'KHALIFEH_EOF'
 #!/bin/bash
 source /opt/khalifeh/core.sh
 main_menu
-EOF
+KHALIFEH_EOF
 
 chmod +x /usr/local/bin/khalifeh
 
-# ================================
-# CREATE SERVICES
-# ================================
-cat > /etc/systemd/system/khalifeh-failover.service <<EOF
+cat > /etc/systemd/system/khalifeh-failover.service << FAILOVER_EOF
 [Unit]
 Description=Khalifeh Failover Engine
 After=network.target
@@ -187,9 +167,9 @@ RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
-EOF
+FAILOVER_EOF
 
-cat > /etc/systemd/system/khalifeh-web.service <<EOF
+cat > /etc/systemd/system/khalifeh-web.service << WEB_EOF
 [Unit]
 Description=Khalifeh Web Panel
 After=network.target
@@ -200,7 +180,7 @@ Restart=always
 
 [Install]
 WantedBy=multi-user.target
-EOF
+WEB_EOF
 
 systemctl daemon-reload
 
