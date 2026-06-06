@@ -1,3 +1,4 @@
+cat > /opt/khalifeh/core.sh << 'CORE_EOF'
 #!/bin/bash
 
 BASE="/opt/khalifeh"
@@ -6,20 +7,14 @@ CFG="$BASE/configs"
 
 if [[ -f "$MOD/rathole.sh" ]]; then
     source $MOD/rathole.sh
-else
-    echo "Warning: rathole.sh not found"
 fi
 
 if [[ -f "$MOD/frp.sh" ]]; then
     source $MOD/frp.sh
-else
-    echo "Warning: frp.sh not found"
 fi
 
 if [[ -f "$MOD/hysteria2.sh" ]]; then
     source $MOD/hysteria2.sh
-else
-    echo "Warning: hysteria2.sh not found"
 fi
 
 RED='\033[0;31m'
@@ -128,7 +123,7 @@ case $c in
     if declare -f rathole_menu > /dev/null; then
         rathole_menu
     else
-        echo "Rathole module not loaded properly"
+        echo "Rathole module not loaded"
         read -p "Press Enter..."
     fi
     ;;
@@ -136,7 +131,7 @@ case $c in
     if declare -f frp_menu > /dev/null; then
         frp_menu
     else
-        echo "FRP module not loaded properly"
+        echo "FRP module not loaded"
         read -p "Press Enter..."
     fi
     ;;
@@ -144,7 +139,7 @@ case $c in
     if declare -f hysteria_menu > /dev/null; then
         hysteria_menu
     else
-        echo "Hysteria2 module not loaded properly"
+        echo "Hysteria2 module not loaded"
         read -p "Press Enter..."
     fi
     ;;
@@ -157,3 +152,4 @@ case $c in
 esac
 done
 }
+CORE_EOF
