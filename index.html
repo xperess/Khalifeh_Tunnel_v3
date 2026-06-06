@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Khalifeh Tunnel Panel</title>
+    <style>
+        body { background:#111; color:#0f0; font-family:monospace; }
+        .box { padding:10px; border:1px solid #0f0; margin:10px; }
+        button { margin:3px; }
+    </style>
+</head>
+<body>
+
+<h2>🔥 Khalifeh Tunnel Control Panel</h2>
+
+<div id="status"></div>
+
+<script>
+async function loadStatus() {
+    let res = await fetch('/api/status');
+    let data = await res.json();
+
+    let html = "";
+
+    for (let k in data) {
+        html += `
+        <div class="box">
+            <b>${k}</b> : ${data[k]}
+            <br>
+            <button onclick="fetch('/api/start/${k}')">Start</button>
+            <button onclick="fetch('/api/stop/${k}')">Stop</button>
+            <button onclick="fetch('/api/restart/${k}')">Restart</button>
+        </div>`;
+    }
+
+    document.getElementById("status").innerHTML = html;
+}
+
+setInterval(loadStatus, 3000);
+loadStatus();
+</script>
+
+</body>
+</html>
