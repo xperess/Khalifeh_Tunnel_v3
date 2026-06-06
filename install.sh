@@ -25,32 +25,46 @@ BASE="/opt/khalifeh"
 MOD="$BASE/modules"
 CFG="$BASE/configs"
 
-source $MOD/rathole.sh
-source $MOD/frp.sh
+if [[ -f "$MOD/rathole.sh" ]]; then
+    source $MOD/rathole.sh
+fi
+
+if [[ -f "$MOD/frp.sh" ]]; then
+    source $MOD/frp.sh
+fi
+
+if [[ -f "$MOD/hysteria2.sh" ]]; then
+    source $MOD/hysteria2.sh
+fi
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 YELLOW='\033[0;33m'
+MAGENTA='\033[0;35m'
 NC='\033[0m'
 
 banner() {
 clear
-echo -e "${CYAN}"
-echo "======================================"
-echo "   KHALIFEH TUNNEL v2 (PRO CORE)"
-echo "======================================"
+echo -e "${MAGENTA}"
+echo "=========================================="
+echo "   KHALIFEH TUNNEL v2 (COMPLETE EDITION)"
+echo "=========================================="
 echo -e "${NC}"
 }
 
 status_all() {
 echo -e "${GREEN}=== RATHOLE ===${NC}"
-systemctl status khalifeh-rathole-server --no-pager 2>/dev/null || true
-systemctl status khalifeh-rathole-client --no-pager 2>/dev/null || true
+systemctl status khalifeh-rathole-server --no-pager 2>/dev/null || echo "Not installed"
+systemctl status khalifeh-rathole-client --no-pager 2>/dev/null || echo "Not installed"
 echo ""
 echo -e "${YELLOW}=== FRP ===${NC}"
-systemctl status frps --no-pager 2>/dev/null || true
-systemctl status frpc --no-pager 2>/dev/null || true
+systemctl status frps --no-pager 2>/dev/null || echo "Not installed"
+systemctl status frpc --no-pager 2>/dev/null || echo "Not installed"
+echo ""
+echo -e "${CYAN}=== HYSTERIA2 ===${NC}"
+systemctl status hysteria2 --no-pager 2>/dev/null || echo "Not installed"
+systemctl status hysteria2-client --no-pager 2>/dev/null || echo "Not installed"
 echo ""
 read -p "Press Enter..."
 }
@@ -96,12 +110,16 @@ read -p "Press Enter..."
 
 health() {
 echo "[*] Checking services..."
-for svc in khalifeh-rathole-server khalifeh-rathole-client frps frpc; do
-    STATUS=$(systemctl is-active $svc 2>/dev/null)
-    if [[ "$STATUS" == "active" ]]; then
-        echo -e "$svc : ${GREEN}OK${NC}"
+for svc in khalifeh-rathole-server khalifeh-rathole-client frps frpc hysteria2 hysteria2-client; do
+    if systemctl list-units --full -all 2>/dev/null | grep -q $svc; then
+        STATUS=$(systemctl is-active $svc 2>/dev/null)
+        if [[ "$STATUS" == "active" ]]; then
+            echo -e "$svc : ${GREEN}OK${NC}"
+        else
+            echo -e "$svc : ${RED}DOWN${NC}"
+        fi
     else
-        echo -e "$svc : ${RED}DOWN${NC}"
+        echo -e "$svc : ${YELLOW}Not installed${NC}"
     fi
 done
 read -p "Press Enter..."
@@ -112,21 +130,44 @@ while true; do
 banner
 echo "1) Rathole Module"
 echo "2) FRP Module"
-echo "3) Status All"
-echo "4) Health Check"
-echo "5) Network Optimize"
-echo "6) Backup"
-echo "7) Restore"
+echo "3) Hysteria2 Module"
+echo "4) Status All"
+echo "5) Health Check"
+echo "6) Network Optimize"
+echo "7) Backup"
+echo "8) Restore"
 echo "0) Exit"
 read -p "Select: " c
 case $c in
-1) rathole_menu ;;
-2) frp_menu ;;
-3) status_all ;;
-4) health ;;
-5) optimize_network ;;
-6) backup ;;
-7) restore ;;
+1)
+    if declare -f rathole_menu > /dev/null; then
+        rathole_menu
+    else
+        echo "Rathole module not loaded"
+        read -p "Press Enter..."
+    fi
+    ;;
+2)
+    if declare -f frp_menu > /dev/null; then
+        frp_menu
+    else
+        echo "FRP module not loaded"
+        read -p "Press Enter..."
+    fi
+    ;;
+3)
+    if declare -f hysteria_menu > /dev/null; then
+        hysteria_menu
+    else
+        echo "Hysteria2 module not loaded"
+        read -p "Press Enter..."
+    fi
+    ;;
+4) status_all ;;
+5) health ;;
+6) optimize_network ;;
+7) backup ;;
+8) restore ;;
 0) exit 0 ;;
 esac
 done
