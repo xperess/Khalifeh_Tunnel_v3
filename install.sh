@@ -21,13 +21,13 @@ mkdir -p $BASE/web/templates
 # PACKAGES
 # ================================
 apt update -y
-apt install -y curl wget jq unzip openssl tar python3-flask
+apt install -y curl wget jq unzip openssl tar
+apt install -y python3-flask || apt install -y flask
 
 # ================================
-# CREATE CORE FILES (جاسازی شده در نصب‌کننده)
+# CREATE CORE FILES
 # ================================
 
-# core.sh (بدون تغییر)
 cat > $BASE/core.sh << 'EOF'
 #!/bin/bash
 
@@ -35,24 +35,15 @@ BASE="/opt/khalifeh"
 MOD="$BASE/modules"
 CFG="$BASE/configs"
 
-# ================================
-# LOAD MODULES
-# ================================
 source $MOD/rathole.sh
 source $MOD/frp.sh
 
-# ================================
-# COLORS
-# ================================
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 YELLOW='\033[0;33m'
 NC='\033[0m'
 
-# ================================
-# HEADER
-# ================================
 banner() {
 clear
 echo -e "${CYAN}"
@@ -62,31 +53,20 @@ echo "======================================"
 echo -e "${NC}"
 }
 
-# ================================
-# STATUS OVERVIEW
-# ================================
 status_all() {
-
 echo -e "${GREEN}=== RATHOLE ===${NC}"
 systemctl status khalifeh-rathole-server --no-pager 2>/dev/null || true
 systemctl status khalifeh-rathole-client --no-pager 2>/dev/null || true
-
 echo ""
 echo -e "${YELLOW}=== FRP ===${NC}"
 systemctl status frps --no-pager 2>/dev/null || true
 systemctl status frpc --no-pager 2>/dev/null || true
-
 echo ""
 read -p "Press Enter..."
 }
 
-# ================================
-# NETWORK OPTIMIZATION
-# ================================
 optimize_network() {
-
 echo "[*] Applying network optimizations..."
-
 cat >> /etc/sysctl.conf <<EOF
 
 # KHALIFEH OPTIMIZATION
@@ -98,77 +78,48 @@ net.ipv4.tcp_fastopen = 3
 net.ipv4.tcp_fin_timeout = 30
 net.ipv4.tcp_tw_reuse = 1
 EOF
-
 sysctl -p >/dev/null 2>&1
-
 echo "[+] Network optimized"
 read -p "Press Enter..."
 }
 
-# ================================
-# BACKUP
-# ================================
 backup() {
-
 TS=$(date +%Y%m%d_%H%M%S)
 BK="/opt/khalifeh/backup_$TS.tar.gz"
-
 tar -czf $BK $BASE
-
 echo "[+] Backup created: $BK"
 read -p "Press Enter..."
 }
 
-# ================================
-# RESTORE
-# ================================
 restore() {
-
 ls /opt/khalifeh/backup_*.tar.gz 2>/dev/null
-
 echo "Enter backup file:"
 read FILE
-
 if [[ -f "$FILE" ]]; then
     tar -xzf $FILE -C /
     echo "[+] Restored"
 else
     echo "Invalid file"
 fi
-
 read -p "Press Enter..."
 }
 
-# ================================
-# HEALTH CHECK
-# ================================
 health() {
-
 echo "[*] Checking services..."
-
-for svc in khalifeh-rathole-server khalifeh-rathole-client frps frpc
-do
+for svc in khalifeh-rathole-server khalifeh-rathole-client frps frpc; do
     STATUS=$(systemctl is-active $svc 2>/dev/null)
-    
     if [[ "$STATUS" == "active" ]]; then
         echo -e "$svc : ${GREEN}OK${NC}"
     else
         echo -e "$svc : ${RED}DOWN${NC}"
     fi
 done
-
 read -p "Press Enter..."
 }
 
-# ================================
-# MAIN MENU
-# ================================
 main_menu() {
-
-while true
-do
+while true; do
 banner
-
 echo "1) Rathole Module"
 echo "2) FRP Module"
 echo "3) Status All"
@@ -177,11 +128,8 @@ echo "5) Network Optimize"
 echo "6) Backup"
 echo "7) Restore"
 echo "0) Exit"
-
 read -p "Select: " c
-
 case $c in
-
 1) rathole_menu ;;
 2) frp_menu ;;
 3) status_all ;;
@@ -190,18 +138,16 @@ case $c in
 6) backup ;;
 7) restore ;;
 0) exit 0 ;;
-
 esac
-
 done
-
 }
 EOF
 
-# دانلود ماژول‌های اصلاح شده از لینک‌های مستقیم (قراره در گیت‌هاب آپلود بشن)
+# ================================
+# DOWNLOAD MODULES
+# ================================
 echo "[*] Downloading modules..."
 
-# آدرس فایل‌ها در گیت‌هاب شما
 GITHUB_BASE="https://raw.githubusercontent.com/xperess/Khalifeh_Tunnel_v3/main"
 
 curl -sSL "$GITHUB_BASE/rathole.sh" -o $BASE/modules/rathole.sh
@@ -226,7 +172,7 @@ EOF
 chmod +x /usr/local/bin/khalifeh
 
 # ================================
-# CREATE FAILOVER SERVICE
+# CREATE SERVICES
 # ================================
 cat > /etc/systemd/system/khalifeh-failover.service <<EOF
 [Unit]
@@ -243,9 +189,6 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
-# ================================
-# CREATE WEB PANEL SERVICE
-# ================================
 cat > /etc/systemd/system/khalifeh-web.service <<EOF
 [Unit]
 Description=Khalifeh Web Panel
@@ -265,7 +208,7 @@ echo ""
 echo "[+] Khalifeh Tunnel v2 installed successfully!"
 echo ""
 echo "Commands:"
-echo "  khalifeh                    → Run CLI Menu"
-echo "  systemctl start khalifeh-failover  → Start Auto Failover"
-echo "  systemctl start khalifeh-web       → Start Web Panel (port 5000)"
+echo "  khalifeh                    -> Run CLI Menu"
+echo "  systemctl start khalifeh-failover  -> Start Auto Failover"
+echo "  systemctl start khalifeh-web       -> Start Web Panel (port 5000)"
 echo ""
